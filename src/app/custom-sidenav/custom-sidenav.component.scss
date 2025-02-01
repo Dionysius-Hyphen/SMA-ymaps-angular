@@ -1,0 +1,185 @@
+
+.sidenav-header {
+    padding-top: 24px;
+    text-align: center;
+}
+
+.header-text {
+    >h2 {
+        margin: 0;
+        font-size: 1rem;
+        line-height: 1.5rem;
+    }
+}
+
+.menu-subItems {
+    margin-inline-start: 16px;
+    margin-top: 10px;
+}
+
+.button-area {    
+    margin-left: 7%;
+    margin-right: 7%;
+    display: flex;
+    flex-direction: column;
+}
+
+.add-menu-button {
+    
+
+    text-align: center;
+    vertical-align: text-top;
+}
+
+.icon_plus{
+    //vertical-align: text-top;
+    height: auto;
+}
+
+.text_plus {
+    size: 34rem;
+}
+
+//$btnColor: #78a4f7;
+//$mainColor: #78a4f7;
+
+.mat-mdc-fab.mat-accent, .mat-mdc-mini-fab.mat-accent{
+    --mdc-fab-container-color: #78a4f7;
+    height: 30px;
+}
+
+/*Подсветка для чекбоксов*/
+.mat-accent{
+    --mdc-checkbox-selected-focus-icon-color: #78a4f7;
+    --mdc-checkbox-selected-hover-icon-color: #78a4f7;
+    --mdc-checkbox-selected-icon-color: #78a4f7;
+    --mdc-checkbox-selected-pressed-icon-color: #78a4f7;
+    --mdc-checkbox-selected-focus-state-layer-color: #78a4f7;
+    --mdc-checkbox-selected-hover-state-layer-color: #78a4f7;
+    --mdc-checkbox-selected-pressed-state-layer-color: #78a4f7;
+}
+
+/*Параметры теста*/
+.mdc-list-item__primary-text {
+    font-family: var(--mdc-list-list-item-label-text-font);             /*Шрифт*/
+    line-height: var(--mdc-list-list-item-label-text-line-height);
+    font-size: var(--mdc-list-list-item-label-text-size);
+    font-weight: var(--mdc-list-list-item-label-text-weight);
+    letter-spacing: var(--mdc-list-list-item-label-text-tracking);
+    color: var(--mdc-list-list-item-label-text-color);                  /*Цвет текста*/
+}
+
+
+#ColorPicker {
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    appearance: none;
+    width: 23px;
+    height: 23px;
+    border: none;
+    cursor: pointer;
+}
+
+#ColorPicker::-webkit-color-swatch{
+    border-radius: 50%;
+    border: 1px solid #000000;
+}
+
+#ColorPicker::-moz-color-swatch{
+    border-radius: 50%;
+    border: 1px solid #000000;
+}
+
+/*Ползунок*/
+.mat-mdc-slider{
+    --mdc-slider-handle-color: #78a4f7;
+    --mdc-slider-focus-handle-color: #78a4f7;
+    --mdc-slider-hover-handle-color: #78a4f7;
+    --mdc-slider-active-track-color: #78a4f7;
+    --mdc-slider-inactive-track-color: #78a4f7;
+    --mdc-slider-with-tick-marks-inactive-container-color: #78a4f7;
+    --mat-mdc-slider-ripple-color: #78a4f7;
+}
+
+
+/*Input field*/
+.mat-mdc-form-field:not(.mat-form-field-no-animations){
+    --mdc-slider-handle-color: #78a4f7;
+    --mdc-slider-focus-handle-color: #78a4f7;
+    --mdc-slider-hover-handle-color: #78a4f7;
+    --mdc-slider-active-track-color: #78a4f7;
+    --mdc-slider-inactive-track-color: #78a4f7;
+    --mdc-slider-with-tick-marks-inactive-container-color: #78a4f7;
+    --mat-mdc-slider-ripple-color: #78a4f7;
+    
+    --mdc-filled-text-field-caret-color: #78a4f7; 
+    --mdc-filled-text-field-focus-active-indicator-color: #78a4f7; 
+    --mdc-filled-text-field-focus-label-text-color: #78a4f7; 
+
+    --mdc-outlined-text-field-caret-color: #78a4f7;
+    --mdc-outlined-text-field-focus-outline-color: #78a4f7;
+    --mdc-outlined-text-field-focus-label-text-color: #78a4f7; 
+
+}
+
+////////////////////////
+/// 
+/// 
+
+/* styles.css */
+body {
+    font-family: Arial, sans-serif;
+    background-color: #f4f4f4;
+    margin: 0;
+    padding: 20px;
+}
+
+.checkbox-list {
+    max-width: 400px;
+    margin: auto;
+}
+
+.checkbox-item {
+    display: flex;
+    align-items: center;
+    //background-color: #fff;
+    //border: 1px solid #ddd;
+    border-radius: 5px;
+    padding: 10px;
+    //margin-bottom: 10px;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+}
+
+.custom-checkbox {
+    display: none; /* Hide the default checkbox */
+}
+
+.checkbox-item label {
+    flex-grow: 1; /* Allow label to take up remaining space */
+    cursor: pointer;
+}
+
+.checkbox-item .edit-icon {
+    margin-left: 10px;
+    cursor: pointer;
+    color: #007BFF; /* Bootstrap primary color */
+}
+
+.checkbox-item .edit-icon:hover {
+    color: #0056b3; /* Darker shade on hover */
+}
+
+/* Custom checkbox styles */
+.custom-checkbox + label::before {
+    content: '';
+    display: inline-block;
+    width: 20px;
+    height: 20px;
+    border: 2px solid #007BFF; /* Border color */
+    border-radius: 3px; /* Rounded corners */
+    margin-right: 10px;
+}
+
+.custom-checkbox:checked + label::before {
+    background-color: #007BFF; /* Background color when checked */
+}

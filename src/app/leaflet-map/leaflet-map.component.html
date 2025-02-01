@@ -1,0 +1,33 @@
+<div id="map" style="height: 500px;width: 100%;"></div>
+<div>
+    <button (click)="stepBack()">Step back </button>
+    <button (click)="clearAllMarkers()">Delete All </button>
+    <button (click)="updatePolyline()">Update </button>
+</div>
+<br>
+<div>
+    <button (click)="getGeoData()">GET</button>
+</div>
+
+<div>
+    <ol>
+        <p>Name of track:</p>
+        <li *ngFor="let track_id of tracks_json">
+            {{ track_id.name }} 
+        </li>
+    </ol>
+</div>
+
+
+<form (submit)="postTrack()">
+    <input [(ngModel)]="trackName" placeholder="Type track name" name="trackName"/>
+    <button type="submit">POST</button> {{post_message}}
+</form>
+<form (submit)="drawTrack()">
+    <input [(ngModel)]="trackNumber" placeholder="Type track number" name="trackNumber"/>
+    <button type="submit">DRAW</button>
+</form>
+<form (submit)="deleteTrack()">
+    <input [(ngModel)]="trackNumber_toDel" placeholder="Type track number" name="trackNumber_toDel"/>
+    <button type="submit">DELETE</button>
+</form>

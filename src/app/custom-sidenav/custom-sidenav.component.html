@@ -1,0 +1,153 @@
+
+<div class="sidenav-header" >
+    <div class="header-text">
+        <span>
+            <h2>Настройки</h2>
+            <!--button mat-fab extended class="add-menu-button" (click)="this.yandexMapComponent.drawSavedGeozone(2)">
+                <mat-icon >test</mat-icon> 
+                <span>DRAW!</span>
+            </button> 
+            <button mat-fab extended class="add-menu-button" (click)="this.openRedactor(3)">
+                <mat-icon >test</mat-icon> 
+                <span>ТЕСТ!</span>
+            </button--> 
+            @if (this.redactorOpen_flag()) {
+                <button mat-fab extended class="add-menu-button" (click)="this.closeRedactor()">
+                    <mat-icon>arrow_back</mat-icon> 
+                    <span>Назад</span>
+                </button>
+            }
+
+        </span>
+    </div>
+</div>
+
+<mat-nav-list class="menu_list">
+
+    @for (item of menuItems(); track item.lable+item.icon+$index+item.show; let  j = $index) {
+
+        <!-- Скрываем спец вкладки -->
+        @if (item.show) {
+            <!-- Основные вкладки -->
+            <a mat-list-item class="menu-items" (click)="updateNested(j)">
+            
+                    <mat-icon matListItemIcon>{{ item.icon }}</mat-icon>
+                    <span matListItemTitle>{{ item.lable }}</span>
+
+                    <!-- Ставим значком открытой вкладки только для вкладок, у которых есть дочерние элементы-->         
+                    @if (item.subItems) {
+                        
+                        <span matListItemMeta>
+
+                            <!-- Управляем значком открытой вкладки -->
+                            @if (item.open) {
+                                <mat-icon>expand_less</mat-icon>
+                            } @else {
+                                <mat-icon>expand_more</mat-icon>
+                            }
+                            
+                        </span>
+                    } 
+            
+            </a>
+
+            @if (item.lable=='Геозоны'&& item.open) {
+                <div class="button-area" @expandContractMenu>
+                    <button mat-fab extended class="add-menu-button" (click)="this.menuAddNewGeozone(j)">
+                            <mat-icon >add_circle_outline</mat-icon> 
+                            <span>Добавить геозону</span>
+                    </button>
+                </div>                
+            }
+
+            @if (item.lable=='Редактор геозон') {
+
+                <div class="button-area" @expandContractMenu>
+
+                    <span>
+                        <!--button (click)="this.yandexMapComponent.changeFrameChanges()"><mat-icon>{{this.yandexMapComponent.icon_changeFrame}}</mat-icon></button>
+                        <button (click)="this.yandexMapComponent.changeDrawStatus()"><mat-icon>{{this.yandexMapComponent.icon_draw}}</mat-icon></button-->
+                        <button (click)="this.yandexMapComponent.changeEditStatus()"><mat-icon>{{this.yandexMapComponent.icon_edit}}</mat-icon></button>
+                        <button (click)="this.deleteGozoneFromMenu()"><mat-icon>{{this.yandexMapComponent.icon_delete}}</mat-icon></button>
+                    </span>
+
+                    <mat-form-field class="example-full-width">
+                        <mat-label>Наименование геозоны</mat-label>
+                        <input matInput [(ngModel)]="this.yandexMapComponent.mapObjectName" (input)="this.yandexMapComponent.ngOnChanges()" placeholder="">
+                    </mat-form-field>                    
+
+                        <span>
+                            <a class="mdc-list-item__primary-text">Цвет заливки: </a>
+                            <input id="ColorPicker" type="color" [(ngModel)]="this.yandexMapComponent.geozoneFillColor" (input)="this.yandexMapComponent.ngOnChanges()" placeholder="#FF0000" />
+                        </span>
+                        <span>
+                            <a class="mdc-list-item__primary-text">Цвет контура: </a>
+                            <input type="color" [(ngModel)]="this.yandexMapComponent.geozoneStrokeColor" (input)="this.yandexMapComponent.ngOnChanges()" placeholder="Цвет контура" />
+                        </span>
+                        <br>
+                        <a class="mdc-list-item__primary-text">Прозрачность: </a>
+                        <mat-slider min="0" max="1" step="0.1" discrete >
+                            <input matSliderThumb value="0.3" [(ngModel)]="this.yandexMapComponent.geozoneOpacity" (input)="this.yandexMapComponent.ngOnChanges()" placeholder="Прозрачность" />
+                        </mat-slider>    
+
+                      
+                        <div class="button-area" @expandContractMenu>
+                            @if (this.yandexMapComponent.chosenMapObject['ID_in_DB']) {                      
+                                <button mat-fab extended class="add-menu-button" (click)="this.yandexMapComponent.patchMapObjectByID()">
+                                    <mat-icon >save</mat-icon> 
+                                    <span>Обновить</span>
+                                </button>} 
+                            @else {
+                                <button mat-fab extended class="add-menu-button" (click)="this.yandexMapComponent.postTrack()">
+                                    <mat-icon >save</mat-icon> 
+                                    <span>Сохранить</span>
+                                </button> 
+                                }
+                                 
+                            {{this.yandexMapComponent.post_message}}
+                        </div>  
+                </div>
+            }
+        }
+    <!-- Подпункты вкладок -->
+        @if (item.subItems && item.open){
+            <!-- @expandContractMenu - Изчезающий эффект -->
+            <div class="menu-subItems" @expandContractMenu >
+
+                @if (item.lable=='Маршруты'){
+                    @for (subItem of item.subItems; track subItem.id+subItem.name+$index; let  i = $index) {
+                        <a mat-list-item class="menu-items-subitems indented">      
+                            <div class="checkbox-list">
+                                <div class="checkbox-item">
+                                    <mat-checkbox matListItemIcon  [checked]="subItem.attached" (change)="update($event.checked, j, i, item.lable)"></mat-checkbox>
+                                    <label for="i">{{ subItem.name }}</label>
+                                    <!--span class="edit-icon" (click)="openGeozoneInRadactor(true, j, i, item.lable, subItem.id)">✎</span-->
+                                </div>
+                            </div>
+
+                            <!--mat-checkbox matListItemIcon  [checked]="subItem.attached" (change)="update($event.checked, j, i, item.lable)"></mat-checkbox>
+                            <span matListItemTitle>{{ subItem.name }} </span-->
+                        </a>
+                    }
+                } 
+                
+                @else if (item.lable=='Геозоны'){
+                    @for (subItem of item.subItems; track subItem.id+subItem.name+$index; let  i = $index) {
+
+                        <a mat-list-item class="menu-items-subitems indented"> 
+                            <div class="checkbox-list">
+                                <div class="checkbox-item">
+                                    <mat-checkbox matListItemIcon  [checked]="subItem.attached" (change)="update($event.checked, j, i, item.lable)"></mat-checkbox>
+                                    <label for="i">{{ subItem.name }}</label>
+                                    <!--span class="edit-icon" (click)="openGeozoneInRadactor(true, j, i, item.lable, subItem.id)">✎</span-->
+                                </div>
+                            </div>
+                        </a>
+                    }
+                } 
+
+            </div>
+        }
+    }
+
+</mat-nav-list>
