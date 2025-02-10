@@ -1,9 +1,28 @@
+<!--mat-toolbar class="map-elevation-z3">
+    <button mat-icon-button class="example-icon" aria-label="Example icon-button with menu icon">
+      <mat-icon>menu</mat-icon>
+    </button>
+    <span>СМА</span>
+    <span class="example-spacer"></span>
+</mat-toolbar-->
+<mat-sidenav-container>
 
+    <mat-sidenav opened mode="side" [style.width]="'250px'"> 
+        <!--app-custom-sidenav 
+        [geozoneCoords]="geozoneCoords"
+        [geozoneFillColor]="geozoneFillColor"
+        [geozoneStrokeColor]="geozoneStrokeColor"
+        [geozoneOpacity]="geozoneOpacity"
+        [chosenMapObject]="chosenMapObject"
+        >            
+        </app-custom-sidenav-->    
+
+<!-- START of old component-->>        
 <div class="sidenav-header" >
     <div class="header-text">
         <span>
-            <h2>Настройки</h2>
-            <!--button mat-fab extended class="add-menu-button" (click)="this.yandexMapComponent.drawSavedGeozone(2)">
+            <h2>Настройки {{geozoneFillColor}}</h2>
+            <!--button mat-fab extended class="add-menu-button" (click)="this.drawSavedGeozone(2)">
                 <mat-icon >test</mat-icon> 
                 <span>DRAW!</span>
             </button> 
@@ -65,46 +84,53 @@
                 <div class="button-area" @expandContractMenu>
 
                     <span>
-                        <!--button (click)="this.yandexMapComponent.changeFrameChanges()"><mat-icon>{{this.yandexMapComponent.icon_changeFrame}}</mat-icon></button>
-                        <button (click)="this.yandexMapComponent.changeDrawStatus()"><mat-icon>{{this.yandexMapComponent.icon_draw}}</mat-icon></button-->
-                        <button (click)="this.yandexMapComponent.changeEditStatus()"><mat-icon>{{this.yandexMapComponent.icon_edit}}</mat-icon></button>
-                        <button (click)="this.deleteGozoneFromMenu()"><mat-icon>{{this.yandexMapComponent.icon_delete}}</mat-icon></button>
+                        <!--button (click)="this.changeFrameChanges()"><mat-icon>{{this.icon_changeFrame}}</mat-icon></button>
+                        <button (click)="this.changeDrawStatus()"><mat-icon>{{this.icon_draw}}</mat-icon></button-->
+                        <button (click)="this.changeEditStatus()"><mat-icon>{{this.icon_edit}}</mat-icon></button>
+                        <button (click)="this.deleteGozoneFromMenu()"><mat-icon>{{this.icon_delete}}</mat-icon></button>
                     </span>
 
                     <mat-form-field class="example-full-width">
                         <mat-label>Наименование геозоны</mat-label>
-                        <input matInput [(ngModel)]="this.yandexMapComponent.mapObjectName" (input)="this.yandexMapComponent.ngOnChanges()" placeholder="">
+                        <input matInput [(ngModel)]="this.mapObjectName" (input)="this.ngOnChanges()" placeholder="">
                     </mat-form-field>                    
 
                         <span>
                             <a class="mdc-list-item__primary-text">Цвет заливки: </a>
-                            <input id="ColorPicker" type="color" [(ngModel)]="this.yandexMapComponent.geozoneFillColor" (input)="this.yandexMapComponent.ngOnChanges()" placeholder="#FF0000" />
+                            <input id="ColorPicker" type="color" [(ngModel)]="this.geozoneFillColor" (input)="this.ngOnChanges()" placeholder="#FF0000" />
                         </span>
                         <span>
                             <a class="mdc-list-item__primary-text">Цвет контура: </a>
-                            <input type="color" [(ngModel)]="this.yandexMapComponent.geozoneStrokeColor" (input)="this.yandexMapComponent.ngOnChanges()" placeholder="Цвет контура" />
+                            <input type="color" [(ngModel)]="this.geozoneStrokeColor" (input)="this.ngOnChanges()" placeholder="Цвет контура" />
                         </span>
                         <br>
                         <a class="mdc-list-item__primary-text">Прозрачность: </a>
                         <mat-slider min="0" max="1" step="0.1" discrete >
-                            <input matSliderThumb value="0.3" [(ngModel)]="this.yandexMapComponent.geozoneOpacity" (input)="this.yandexMapComponent.ngOnChanges()" placeholder="Прозрачность" />
+                            <input matSliderThumb value="0.3" [(ngModel)]="this.geozoneOpacity" (input)="this.ngOnChanges()" placeholder="Прозрачность" />
                         </mat-slider>    
 
                       
                         <div class="button-area" @expandContractMenu>
-                            @if (this.yandexMapComponent.chosenMapObject['ID_in_DB']) {                      
-                                <button mat-fab extended class="add-menu-button" (click)="this.yandexMapComponent.patchMapObjectByID()">
+                            @if (this.chosenMapObject['ID_in_DB']) {                      
+                                <button mat-fab extended class="add-menu-button" (click)="this.patchMapObjectByID(
+                                    chosenMapObject,
+                                    mapObjectName,
+                                    geozoneCoords,
+                                    geozoneFillColor,
+                                    geozoneStrokeColor,
+                                    geozoneOpacity
+                                  )">
                                     <mat-icon >save</mat-icon> 
                                     <span>Обновить</span>
                                 </button>} 
                             @else {
-                                <button mat-fab extended class="add-menu-button" (click)="this.yandexMapComponent.postTrack()">
+                                <button mat-fab extended class="add-menu-button" (click)="this.postTrack()">
                                     <mat-icon >save</mat-icon> 
                                     <span>Сохранить</span>
                                 </button> 
                                 }
                                  
-                            {{this.yandexMapComponent.post_message}}
+                            {{this.post_message}}
                         </div>  
                 </div>
             }
@@ -151,3 +177,38 @@
     }
 
 </mat-nav-list>
+<!-- END of old component-->>
+    </mat-sidenav>
+
+    <mat-sidenav-content class="content">
+        
+        <div>
+
+            <div id="map" style="height: 100vh;width: 100%;"></div>
+
+            <div>
+                <button (click)="tempTextButton()">Тестировать</button>
+                <button (click)="tempTextButton_2()">Тестить</button>
+            </div>
+
+            <!--br>
+            <div>
+                <button (click)="addNewGeozone()">Добавить новую геозону</button>
+            </div>
+            <div>
+                <button (click)="draw_geozone()">Геозона в Москве</button>
+            </div--> 
+        
+            <!--br>
+            <br>
+            <div  *ngIf="mapObjectType=='overlay.Placemark'" >
+                <p>Маркеры:</p>
+                <input type="text" [(ngModel)]="mapObjectName" (input)="ngOnChanges()" placeholder="Введите имя объекта" /><br>
+                <input type="color" [(ngModel)]="colorCode" (input)="ngOnChanges()" placeholder="#FF0000" />
+            </div-->
+        
+        </div>
+
+    </mat-sidenav-content>
+</mat-sidenav-container>
+

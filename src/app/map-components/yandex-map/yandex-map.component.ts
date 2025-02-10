@@ -1,16 +1,46 @@
-import { Component, OnInit, AfterViewInit, Input, ChangeDetectorRef, signal  } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
-import { FeatureCollection } from 'geojson';
+import { Component, OnInit, AfterViewInit, Input, ChangeDetectorRef, signal, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { MatToolbarModule } from '@angular/material/toolbar';
 import { MatButtonModule } from '@angular/material/button';
 import { MatSidenavModule } from '@angular/material/sidenav';
 import { MatIconModule } from '@angular/material/icon'
-import { RouterOutlet } from '@angular/router';
-import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
-import { BrowserModule } from '@angular/platform-browser';
-import { CustomSidenavComponent } from "../custom-sidenav/custom-sidenav.component";
+// Сервисы
+import {MapServiceCitySelectService} from '../../map-services/map-service-init-settings/map-service-city-select.service';
+import { MapHttpRequestsService } from '../../map-services/map-service-init-settings/map-http-requests.service';
+
+
+// OLD menu component 
+import { /*Component, inject, Input, */model/*, OnInit, signal*/ } from '@angular/core';
+import { MatListModule} from '@angular/material/list';
+//import { MatIconModule} from '@angular/material/icon';
+//import { MatButtonModule} from '@angular/material/button';
+import { MatSliderModule } from '@angular/material/slider';
+import { MatCheckboxModule } from '@angular/material/checkbox';
+import { MatInputModule } from '@angular/material/input';
+//import { CommonModule } from '@angular/common';
+import { animate, style, transition, trigger } from '@angular/animations';
+//import { YandexMapComponent } from '../yandex-map/yandex-map.component';
+//import { FormsModule } from '@angular/forms';
+
+
+export type MenuObjects = {
+  id: number
+  name: string
+  track_geojson: string
+  icon: string
+  lable: string
+  attached: boolean
+}
+
+export type MenuItem = {
+  icon: string
+  lable: string
+  open: boolean
+  show: boolean
+  route?: string
+  subItems?: MenuObjects[]
+}
 
 
 declare const ymaps:any;
@@ -26,23 +56,78 @@ interface MapObjectRecord {
   selector: 'app-yandex-map',
   templateUrl: './yandex-map.component.html',
   styleUrl: './yandex-map.component.scss',
-  imports: [CommonModule, FormsModule, MatToolbarModule, MatIconModule, MatButtonModule, MatSidenavModule, CustomSidenavComponent],
-  standalone: true
+  imports: [CommonModule, FormsModule, MatToolbarModule, MatIconModule, MatButtonModule, MatSidenavModule,
+    MatListModule, MatCheckboxModule, MatSliderModule, MatInputModule
+  ],
+  standalone: true,
+  // Adding animation for smooth appearing and diappearing effect in menu
+  animations: [
+      trigger('expandContractMenu', [
+        transition(':enter', [
+          style({ opacity:0, height:'0px' }),
+          animate('500ms ease-in-out', style({ opacity:1, height:'*' }))
+        ]),
+        transition(':leave', [
+          animate('500ms ease-in-out', style({ opacity:0, height:'0px' }))
+        ])
+      ])
+    ]
 })
 
 export class YandexMapComponent implements OnInit, AfterViewInit {
-  
-  constructor(
-    private cdr: ChangeDetectorRef,
-    private http: HttpClient
-  ) {}
 
+  tracks_list: any;
+  geozone_list: any;
+  menuItems = signal<MenuItem[]>([]); // Initialize as an empty signal
+
+  ///////////////////////////////
+  temp_message:string = 'TEMP01'
+
+  // Загрузка сервисов  
+  public сitySelectService:any = inject(MapServiceCitySelectService)
+  public mapHttpRequestsService:any = inject(MapHttpRequestsService)
+
+  public mapCenter!:number[]|any
+
+  citySelector:any = []
+  mapInitZoom!:number
+
+  // Функции из сервисов
+  addCitySelectorButton!:any
+  getGeoData!:any
+  
+  deleteTrack!:any
+  deleteGeozone!:any
+  patchMapObjectByID!:any
+  postTrack!:any
+
+  constructor(
+    private cdr: ChangeDetectorRef
+  ) {
+    this.mapCenter = this.сitySelectService.mapCenter
+    this.citySelector = this.сitySelectService.citySelector
+    this.mapInitZoom = this.сitySelectService.mapInitZoom
+    this.addCitySelectorButton = this.сitySelectService.addCitySelectorButton
+
+    this.getGeoData = this.mapHttpRequestsService.getGeoData,
+
+    ////
+    
+    this.deleteTrack = this.mapHttpRequestsService.deleteTrack
+    this.deleteGeozone = this.mapHttpRequestsService.deleteGeozone
+    this.patchMapObjectByID = this.mapHttpRequestsService.patchMapObjectByID
+    this.postTrack = this.mapHttpRequestsService.postTrack
+  }
+
+    currentItem!: MenuItem; 
+    redactorOpen_flag = signal(false)
+    readonly isChecked = model(false);
+    
   drawMode = signal(false)
 
   //Creation of object Map
   public map:any
   public objectManager:any
-  public mapCenter:number[]|any = [59.93245701691211, 30.3579130053922]//[58.539244168719485, 31.252706726744687]
   public polyline:any
   public coord_array:any
   public geozone:any
@@ -62,6 +147,220 @@ export class YandexMapComponent implements OnInit, AfterViewInit {
   
   //////////////////////////////////////////////////////
 
+  // Remove object from map 
+  detachFromMenu(id:number, lable:any){
+
+    //console.log(this.mapObjectDict)
+    console.log("Delete:", id)
+
+    switch (lable){
+
+      case 'Маршруты':
+        //Маршрут
+        const objectToDetach = this.getMapObjectRecordById(id)?.object
+        this.map.geoObjects.remove(objectToDetach)
+        //Метка старта
+        const objectToDetach_2 = this.getMapStartPointById(id)?.object
+        this.map.geoObjects.remove(objectToDetach_2)
+        //Метка финиша
+        const objectToDetach_3 = this.getMapEndPointById(id)?.object
+        this.map.geoObjects.remove(objectToDetach_3)
+
+        //Удаление из массива
+        this.deleteMapObjectRecordById(id)  
+        break
+
+      case 'Геозоны':
+
+        //Геозона
+        const geozoneToDetach = this.getGeozoneMapObjectRecordById(id)?.object
+        this.map.geoObjects.remove(geozoneToDetach)
+
+        console.log("drawSavedGeozone1", this.mapGeozoneObjectDict)
+        //Удаление из массива
+        this.deleteGeozoneMapObjectRecordById(id)  
+        console.log("drawSavedGeozone2", this.mapGeozoneObjectDict)
+
+        break
+    }
+ 
+
+  }
+
+  // Add object on map from menu
+  attachFromMenu(id:number, lable:any){
+
+    switch (lable){
+
+      case 'Маршруты':
+
+        if(!this.getMapObjectRecordById(id)?.object){
+
+          this.drawTrack(id)
+        }        
+        break
+
+      case 'Геозоны':
+        //Геозона        
+
+        if(!this.getGeozoneMapObjectRecordById(id)?.object){
+
+          this.drawSavedGeozone(id)
+        }        
+        break
+    }
+  }
+
+  checkboxFromMenu(id:number, attached:boolean, lable:any){
+
+    console.log(attached)
+
+    if(!attached){
+      this.detachFromMenu(id, lable)
+    } else {
+      this.attachFromMenu(id, lable)
+    }
+  }
+
+  // Delete object from menu
+  deleteFromMenu(id:number){
+
+    console.log("ID: ",id)
+    this.trackID = id
+    this.deleteTrack()
+  }
+
+  id_toDel:any 
+
+  deleteGozoneFromMenu(){
+
+    if(this.chosenMapObject['ID_in_DB']){
+      console.log("1")
+      this.id_toDel = this.chosenMapObject['ID_in_DB']
+      this.detachFromMenu(this.id_toDel, 'Геозоны')
+      this.deleteGeozone()
+
+    } else if(this.chosenMapObject['Temp_ID']){
+      console.log("2")
+      this.id_toDel = this.chosenMapObject['Temp_ID']
+      this.detachFromMenu(this.id_toDel, 'Геозоны')
+      this.map.geoObjects.remove(this.chosenMapObject)
+
+    } else {
+      console.log("Нет заданого ID")
+    }
+    
+    this.closeRedactor()
+    //console.log("IID",this.chosenMapObject['ID_in_DB'])
+  }
+
+
+  update(completed: boolean, j: number, i: number, lable:any) {
+
+    this.menuItems.update(menuItems => {
+        const subItem = menuItems[j].subItems![i]; // Access the specific subItem
+        subItem.attached = completed; // Update the attached property
+
+        this.checkboxFromMenu(subItem.id, subItem.attached, lable)
+        return [...menuItems]; // Return updated menuItems
+    });
+  
+  }
+
+  updateNested(j: number) {
+
+    this.menuItems.update(menuItems => {
+      
+      // Close all except current
+      for (let i = 0; i < menuItems.length; i++) {
+        if(i != j){
+          menuItems[i].open = false;
+        } else {
+          const CurrentItem = menuItems[j]; 
+          CurrentItem.open = !CurrentItem.open; 
+        }
+        
+      }
+
+      return [...menuItems]; 
+    });
+  }
+
+  openRedactor(j: number) {
+
+    this.menuItems.update(menuItems => {
+      
+      // 
+      for (let i = 0; i < menuItems.length; i++) {
+        if(i != j && menuItems[i].lable != 'Редактор геозон'){
+          menuItems[i].show = false;
+        } else {
+          menuItems[i].show = true;
+        }
+        
+      }
+      // Флаг открытия редактора
+      this.redactorOpen_flag.set(true)
+
+      return [...menuItems]; 
+    });
+  }
+
+  closeRedactor() {
+
+    this.menuItems.update(menuItems => {
+      
+      // 
+      for (let i = 0; i < menuItems.length; i++) {
+        if(menuItems[i].lable == 'Редактор геозон'){
+          menuItems[i].show = false;
+        } else {
+          menuItems[i].show = true;
+        }
+        
+      }
+      
+      // Флаг закрытия редактора
+      this.redactorOpen_flag.set(false)
+
+      return [...menuItems]; 
+    });
+  }
+
+  // For redactor tab in menu
+  menuAddNewGeozone(j: number){
+    //
+    this.addNewGeozone()
+    this.openRedactor(j)
+  }
+
+  // Открытие редактора при выборе объекта на карте
+  public changeObjectinMenu(){
+    
+    //if(this.map){
+      // Select object on map by cliking it
+      this.map.geoObjects.events.add('click', (e:any) => {
+        
+        console.log("CHANGING!")
+        this.openRedactor(3)
+      })
+    //}
+  }
+
+  openGeozoneInRadactor(checked:boolean, j:any, i:any, lable:any, id:any){
+
+    //console.log("@!@", this.mapGeozoneObjectDict)
+    
+    //Загрузить объект по iD
+    this.chosenMapObject = this.getGeozoneMapObjectRecordById(id)
+
+    //Ставится галочка и отображается объект на карте
+    this.update(checked, j, i, lable)
+    //Открыть редактор
+    this.openRedactor(j)
+  }
+
+  /////////////////////////////////////////////////////
   ///// Arrays for different types of map objects
   mapObjectDict: MapObjectRecord[] = [];
   mapGeozoneObjectDict: MapObjectRecord[] = [];
@@ -143,17 +442,17 @@ export class YandexMapComponent implements OnInit, AfterViewInit {
   }
   /////////////////////////////////////////////////
 
-  @Input() colorCode: string = '#F00FFF'; // Default color
-  @Input() mapObjectName: string = ''; // Default color
-  @Input() geozoneFillColor: string = '#F00FFF'; // Default color
-  @Input() geozoneStrokeColor: string = '#F00FFF'; // Default color
-  @Input() geozoneOpacity: number = 0.3; // Default color
-  @Input() geozoneCoords: any = []; // Default color
+  @Input() colorCode: string = '#F00FFF'; // Default text color
+  @Input() mapObjectName: string = ''; // Default name
+  @Input() geozoneFillColor: string = '#F00FFF'; // Default fill color
+  @Input() geozoneStrokeColor: string = '#F00FFF'; // Default line color
+  @Input() geozoneOpacity: number = 0.3; // Default opacity
+  @Input() geozoneCoords: any = []; // Default coords
 
 
   @Input() tracks_json:any = null; //container for tracks information
-  @Input() geozones_json:any = null; //container for tracks information
-  @Input() pointCollections_json:any = null; //container for tracks information
+  @Input() geozones_json:any = null; 
+  @Input() pointCollections_json:any = null; 
   @Input() post_message: string = "";
 
   @Input() geozoneName: string = "";
@@ -168,13 +467,61 @@ export class YandexMapComponent implements OnInit, AfterViewInit {
   
 
 
+
   ngOnInit() {
   }
 
   ngAfterViewInit() {
-
+    
     this.createMap()
 
+    this.getGeoData();
+
+    this.tracks_list = this.tracks_json;
+    this.tracks_list = this.tracks_list.map((task:any) => ({
+      ...task,
+      attached: false // Add the new property
+    }));
+
+    this.geozone_list = this.geozones_json
+    this.geozone_list = this.geozone_list.map((task:any) => ({
+      ...task,
+      attached: false // Add the new property
+    }));
+
+    const list_b = [this.tracks_list]
+    const list_gz = [this.geozone_list]
+
+    console.log(list_b)
+
+    // Update menuItems after tracks_list is set
+    this.menuItems.set([
+      {
+        icon: 'edit_mode',
+        lable: 'Редактор геозон',
+        open: false,
+        show: false,
+        route: ''
+      },
+      {
+        icon: 'directions_car',
+        lable: 'Маршруты',
+        open: false,
+        show: true,
+        route: '',
+        subItems: list_b[0]
+      },
+      {
+        icon: 'blur_circular',
+        lable: 'Геозоны',
+        open: false,
+        show: true,
+        route: '',
+        subItems: list_gz[0]
+      }
+    ])
+
+    //this.changeObjectinMenu()
   }
   
   public tempTextButton(){
@@ -190,151 +537,28 @@ export class YandexMapComponent implements OnInit, AfterViewInit {
   public tempTextButton_2(){
 
     console.log("Hi!")
-}
-
-  ListBoxLayout:any
-  ListBoxItemLayout:any
-  listBoxItems:any
-  listBox:any
+  }
 
   clusterer:any
 
   private createMap() {
 
-  
-      //Загрузка пользовательских настроек карты
+      // Загрузка пользовательских настроек карты
       ymaps.ready(() => {
 
+        // Создание карты
         this.map = new ymaps.Map('map', {
-          center: this.mapCenter,
-          zoom: 12,
-          //type: 'yandex#satellite'
-      });
+            center: this.mapCenter,
+            zoom: 12
+        });
 
-      //////////////////////////////////////////////////////////////////////// Buttons ////////////////////////////////////////////////////////////////////////
-      // Создадим собственный макет выпадающего списка.
-      const ListBoxLayout = ymaps.templateLayoutFactory.createClass(
-          "<div class='button_x'>"+
-          "<button id='my-listbox-header' class='btn btn-success dropdown-toggle' data-toggle='dropdown'>" +
-              "{{data.title}} <span class='caret'></span>" +
-          "</button>" +
-          // Этот элемент будет служить контейнером для элементов списка.
-          // В зависимости от того, свернут или развернут список, этот контейнер будет
-          // скрываться или показываться вместе с дочерними элементами.
-          "<ul id='my-listbox'" +
-              " class='dropdown-menu' role='menu' aria-labelledby='dropdownMenu'" +
-              " style='display: {% if state.expanded %}block{% else %}none{% endif %};'></ul>"+
-          "</div>", {
-
-          build: function() {
-              // Вызываем метод build родительского класса перед выполнением
-              // дополнительных действий.
-              ListBoxLayout.superclass.build.call(this);
-
-              this.childContainerElement = document.querySelector('#my-listbox');
-              // Генерируем специальное событие, оповещающее элемент управления
-              // о смене контейнера дочерних элементов.
-              this.events.fire('childcontainerchange', {
-                  newChildContainerElement: this.childContainerElement,
-                  oldChildContainerElement: null
-              });
-          },
-
-          // Переопределяем интерфейсный метод, возвращающий ссылку на
-          // контейнер дочерних элементов.
-          getChildContainerElement: function () {
-              return this.childContainerElement;
-          },
-
-          clear: function () {
-              // Заставим элемент управления перед очисткой макета
-              // откреплять дочерние элементы от родительского.
-              // Это защитит нас от неожиданных ошибок,
-              // связанных с уничтожением dom-элементов в ранних версиях ie.
-              this.events.fire('childcontainerchange', {
-                  newChildContainerElement: null,
-                  oldChildContainerElement: this.childContainerElement
-              });
-              this.childContainerElement = null;
-              // Вызываем метод clear родительского класса после выполнения
-              // дополнительных действий.
-              ListBoxLayout.superclass.clear.call(this);
-          }
-      });
-
-      // Также создадим макет для отдельного элемента списка.
-      const ListBoxItemLayout = ymaps.templateLayoutFactory.createClass(
-          "<li><a>{{data.content}}</a></li>"
-      );
-
-      // Создадим 2 пункта выпадающего списка
-      const listBoxItems = [
-          new ymaps.control.ListBoxItem({
-              data: {
-                  content: 'Москва',
-                  center: [55.751574, 37.573856],
-                  zoom: 9
-              }
-          }),
-          new ymaps.control.ListBoxItem({
-              data: {
-                  content: 'Санкт-Петербург',
-                  center: [59.93245701691211, 30.3579130053922],
-                  zoom: 9
-              }
-          }),
-          new ymaps.control.ListBoxItem({
-              data: {
-                  content: 'Омск',
-                  center: [54.990215, 73.365535],
-                  zoom: 9
-              }
-          }),
-          new ymaps.control.ListBoxItem({
-              data: {
-                  content: 'Новгород',
-                  center: [58.539244168719485, 31.252706726744687],
-                  zoom: 9
-              }
-          })
-      ];
-
-      // Теперь создадим список, содержащий 2 пункта.
-      const listBox = new ymaps.control.ListBox({
-              items: listBoxItems,
-              data: {
-                  title: 'Выберите город'
-              },
-              options: {
-                  // С помощью опций можно задать как макет непосредственно для списка,
-                  layout: ListBoxLayout,
-                  // так и макет для дочерних элементов списка. Для задания опций дочерних
-                  // элементов через родительский элемент необходимо добавлять префикс
-                  // 'item' к названиям опций.
-                  itemLayout: ListBoxItemLayout
-              }
-          });
-
-      listBox.events.add('click', (e:any) => {
-          // Получаем ссылку на объект, по которому кликнули.
-          // События элементов списка пропагируются
-          // и их можно слушать на родительском элементе.
-          var item = e.get('target');
-          // Клик на заголовке выпадающего списка обрабатывать не надо.
-          if (item != listBox) {
-              this.map.setCenter(
-                  item.data.get('center'),
-                  item.data.get('zoom')
-              );
-          }
-      });
-
-      this.map.controls.add(listBox, {float: 'left'});
-    
-      this.changeObject()
+        // Добавление кнопки с возможностью переключения между городами
+        const listBox = this.addCitySelectorButton(ymaps, this.map)
+        this.map.controls.add(listBox, {float: 'left'});
+  
+        this.changeObject()
 
       })
-
 
 }
 
@@ -385,27 +609,41 @@ export class YandexMapComponent implements OnInit, AfterViewInit {
   private url:string = 'http://127.0.0.1:8000/api/tracks/'
   private url_geozones:string = 'http://127.0.0.1:8000/api/geozones/'
   private url_pointCollections:string = 'http://127.0.0.1:8000/api/pointcollections/'
-
+/*
   // GET data from serverside database
   public async getGeoData(): Promise<void> {
 
-    const response = await fetch(this.url)
-    //console.log(response)    
-    this.tracks_json = await response.json();
-    //console.log(this.tracks_json)
+    if(true){
 
-    // Geozones
-    const response_geozones = await fetch(this.url_geozones)
-    //console.log(response)    
-    this.geozones_json = await response_geozones.json();
-    //console.log(this.geozones_json)   
+      // Tracks
+      this.tracks_json = json_tracks
+      // Geozones
+      this.geozones_json = json_geozones
+      // Point Collections
+      this.pointCollections_json = json_pointCollection
 
-    // Point Collections
-    const response_pointCollections = await fetch(this.url_pointCollections)
+    } else {
+  
+      const response = await fetch(this.url)
+      //console.log(response)    
+      this.tracks_json = await response.json();
+      //console.log(this.tracks_json)
 
-    this.pointCollections_json = await response_pointCollections.json();
-    //console.log(this.pointCollections_json)   
+      // Geozones
+      const response_geozones = await fetch(this.url_geozones)
+      //console.log(response)    
+      this.geozones_json = await response_geozones.json();
+      //console.log(this.geozones_json)   
+
+      // Point Collections
+      const response_pointCollections = await fetch(this.url_pointCollections)
+      this.pointCollections_json = await response_pointCollections.json();
+      //console.log(this.pointCollections_json)   
+         
+    }
   }
+
+
 
   // Delay for secondary GET request
   public updateTrackArray(){
@@ -515,13 +753,14 @@ export class YandexMapComponent implements OnInit, AfterViewInit {
       
       this.deletionStatus = config
       console.log('Deleted track:', config);
-    })    */
+    })    *//*
     
     // GET data from server - to renew list of tracks
     this.updateTrackArray()
 
   }
   
+  */
   /////////////////////////////////////////////////////////////// Draw new objects on map (from received data) //////////////////////////////////////////////////////////////////
 
   public swapCoordinates(geojson:any) {
@@ -561,7 +800,7 @@ export class YandexMapComponent implements OnInit, AfterViewInit {
 
     console.log(this.pointCollections_json)
 
-    const string_geojson = this.pointCollections_json[25].pointCollection_geojson
+    const string_geojson = this.pointCollections_json[26].pointCollection_geojson
 
     console.log(string_geojson)
 
@@ -1141,6 +1380,9 @@ export class YandexMapComponent implements OnInit, AfterViewInit {
       
 
     }
+
+    
+    this.changeObjectinMenu()
 
   }
 
